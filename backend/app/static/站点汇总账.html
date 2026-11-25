@@ -21,15 +21,25 @@
 
     <section class="卷">
       <div class="工具"><button class="按钮 青" id="结">结当前栏</button></div>
-      <div class="表绕"><table><thead><tr><th>汇总编号</th><th>栏号</th><th>站点</th><th>指标</th><th>报文数</th><th>均值</th></tr></thead><tbody id="表"></tbody></table></div>
+      <div class="横排 下距12" id="账卡"></div>
+      <div class="表绕"><table><thead><tr><th>汇总编号</th><th>栏号</th><th>站点</th><th>指标</th><th>报文数</th><th>均值</th><th>门槛指纹</th></tr></thead><tbody id="表"></tbody></table></div>
     </section>
     <script>
     async function 刷() {
       const rows = await 探栏.getJSON("/api/站点汇总账");
+      const 影 = await 探栏.getJSON("/api/影子归档");
+      const 概 = await 探栏.getJSON("/api/概览");
+      const 正式报文 = rows.reduce((s, r) => s + (r.报文数 || 0), 0);
+      document.getElementById("账卡").innerHTML = `
+        <div class="水卡"><div class="数">${rows.length}</div><div class="标">正式汇总组</div></div>
+        <div class="水卡"><div class="数">${正式报文}</div><div class="标">正式汇总报文数</div></div>
+        <div class="水卡"><div class="数">${影.length}</div><div class="标">影子草稿（不计正式）</div></div>
+        <div class="水卡"><div class="数">${探栏.安全文本(概.账册版本 || 1)}</div><div class="标">账册版本</div></div>
+      `;
       const tb = document.getElementById("表"); tb.innerHTML = "";
-      if (!rows.length) { tb.innerHTML = `<tr><td colspan="6">${探栏.空态("尚无汇总。入栏后点结当前栏。")}</td></tr>`; return; }
+      if (!rows.length) { tb.innerHTML = `<tr><td colspan="7">${探栏.空态("尚无汇总。入栏后点结当前栏。")}</td></tr>`; return; }
       for (const r of rows) {
-        tb.appendChild(探栏.行(`<td>${探栏.安全文本(r.汇总编号)}</td><td>${探栏.安全文本(r.栏号)}</td><td>${探栏.安全文本(r.站点键)}</td><td>${探栏.安全文本(r.指标键)}</td><td>${r.报文数}</td><td>${r.均值}</td>`));
+        tb.appendChild(探栏.行(`<td>${探栏.安全文本(r.汇总编号)}</td><td>${探栏.安全文本(r.栏号)}</td><td>${探栏.安全文本(r.站点键)}</td><td>${探栏.安全文本(r.指标键)}</td><td>${r.报文数}</td><td>${r.均值}</td><td><code>${探栏.安全文本(r.门槛指纹 || "—")}</code></td>`));
       }
     }
     document.getElementById("结").onclick = async () => { await 探栏.postJSON("/api/结栏/跑"); await 刷(); };

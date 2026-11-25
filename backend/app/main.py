@@ -68,6 +68,30 @@ async def api_坏点():
     return jsonify(目录.坏点列表())
 
 
+@app.get("/api/影子归档")
+async def api_影子():
+    return jsonify(目录.影子列表())
+
+
+@app.get("/api/门槛账册")
+async def api_门槛账册():
+    return jsonify(目录.门槛账册())
+
+
+@app.get("/api/分门槛裁决")
+async def api_分门槛裁决():
+    """只读：按指标键取对应门槛裁决，不写库、不推进账册版本。"""
+    指标键 = request.args.get("指标键", "")
+    读数 = request.args.get("读数", "")
+    if not 指标键:
+        return jsonify({"错误": "缺指标键"}), 400
+    try:
+        数值 = float(读数)
+    except (TypeError, ValueError):
+        return jsonify({"错误": "读数非数值"}), 400
+    return jsonify(目录.分门槛裁决探针(指标键, 数值))
+
+
 @app.get("/api/栏贯验")
 async def api_贯验列表():
     return jsonify(目录.贯验列表())

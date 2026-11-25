@@ -32,15 +32,27 @@
           const body = {
             "PM25上限": document.getElementById("PM25上限")?.value,
             "PM25下限": document.getElementById("PM25下限")?.value,
+            "门槛:浊度:下限": document.getElementById("门槛浊度下限")?.value,
+            "门槛:浊度:上限": document.getElementById("门槛浊度上限")?.value,
+            "期望账册版本": document.getElementById("期望账册版本")?.value,
           };
           Object.keys(body).forEach((k) => body[k] === undefined && delete body[k]);
-          el.textContent = JSON.stringify(await 探栏.postJSON("/api/栏规", body), null, 2);
+          const 果 = await 探栏.postJSON("/api/栏规", body);
+          el.textContent = JSON.stringify(果, null, 2);
           await 刷栏规页();
+          if (typeof 刷门槛页 === "function") await 刷门槛页();
         } catch (e) { el.textContent = String(e); }
       };
     }
     const refreshBtn = document.getElementById("刷新栏规");
     if (refreshBtn) refreshBtn.onclick = () => 刷栏规页();
+    (async () => {
+      const 规 = await 探栏.getJSON("/api/栏规");
+      const 填 = (id, v) => { const n = document.getElementById(id); if (n && v !== undefined) n.value = v; };
+      填("PM25下限", 规["PM25下限"]); 填("PM25上限", 规["PM25上限"]);
+      填("门槛浊度下限", 规["门槛:浊度:下限"]); 填("门槛浊度上限", 规["门槛:浊度:上限"]);
+      填("期望账册版本", 规["账册版本"]);
+    })();
     刷栏规页();
   </script>
 </head>
@@ -56,22 +68,72 @@
       <div class="骨">当前栏号与质控阈值。</div>
     </header>
 
-    <section class="卷"><h2>栏规原文</h2><pre class="回执" id="规">加载中…</pre><div class="工具 上距12">
+    <section class="卷"><h2>栏规原文与补丁</h2>
+      <div class="工具">
+        <label class="说明">PM25 下限 <input id="PM25下限" style="width:80px;padding:6px 8px;border-radius:8px;border:1px solid #2a3a4d;background:#0e141c;color:#e7eef7"/></label>
+        <label class="说明">PM25 上限 <input id="PM25上限" style="width:80px;padding:6px 8px;border-radius:8px;border:1px solid #2a3a4d;background:#0e141c;color:#e7eef7"/></label>
+        <label class="说明">浊度 下限 <input id="门槛浊度下限" style="width:80px;padding:6px 8px;border-radius:8px;border:1px solid #2a3a4d;background:#0e141c;color:#e7eef7"/></label>
+        <label class="说明">浊度 上限 <input id="门槛浊度上限" style="width:80px;padding:6px 8px;border-radius:8px;border:1px solid #2a3a4d;background:#0e141c;color:#e7eef7"/></label>
+        <label class="说明">期望账册版本 <input id="期望账册版本" style="width:88px;padding:6px 8px;border-radius:8px;border:1px solid #2a3a4d;background:#0e141c;color:#e7eef7"/></label>
+      </div>
+      <pre class="回执" id="规">加载中…</pre><div class="工具 上距12">
         <button class="按钮" id="保存栏规">保存栏规补丁</button>
         <button class="按钮 次" id="刷新栏规">刷新</button>
       </div>
-      <pre class="回执 上距12" id="栏规回执">改门槛只影响后续装载</pre>
+      <pre class="回执 上距12" id="栏规回执">改门槛只影响后续装载；旧指纹命运在结栏时转只读影子归档，不回刷正式</pre>
+    </section>
+    <section class="卷"><h2>分指标质控门槛（门槛表与入栏同票）</h2>
+      <p class="说明">每指标各取自己的上下限；裁决唯一出处是本指标门槛。未配置门槛的指标显式放行并打标，绝不套用他指标默认阈。</p>
+      <div class="表绕"><table><thead><tr><th>指标</th><th>下限</th><th>上限</th><th>门槛指纹</th><th>分流口径</th></tr></thead><tbody id="门槛表"></tbody></table></div>
+    </section>
+    <section class="卷"><h2>只读：分门槛裁决探针</h2>
+      <p class="说明">输入指标键与读数，按该指标门槛给出裁决，不写库、不推进账册版本。</p>
+      <div class="工具">
+        <input id="探指标" placeholder="指标键，如 浊度" value="浊度" style="padding:8px 10px;border-radius:8px;border:1px solid #2a3a4d;background:#0e141c;color:#e7eef7"/>
+        <input id="探读数" placeholder="读数" value="6" style="padding:8px 10px;border-radius:8px;border:1px solid #2a3a4d;background:#0e141c;color:#e7eef7"/>
+        <button class="按钮 青" id="探裁决">探裁决</button>
+      </div>
+      <pre class="回执 上距12" id="裁决回执">裁决会显示在这里（只读，不写库）</pre>
+    </section>
+    <section class="卷"><h2>门槛账册（每次改门槛钉一版指纹）</h2>
+      <div class="表绕"><table><thead><tr><th>序号</th><th>指标</th><th>下限</th><th>上限</th><th>指纹</th><th>账册版本</th><th>时刻</th></tr></thead><tbody id="账册表"></tbody></table></div>
     </section>
     <section class="卷">
       <h2>夹具预检</h2>
       <div class="表绕"><table><thead><tr><th>夹具</th><th>报文数</th><th>可装</th><th>摘要</th></tr></thead><tbody id="夹具预检表"></tbody></table></div>
     </section>
     <section class="卷"><h2>空桩目录</h2><p class="说明" id="空桩"></p>
-      <div class="双栏"><p class="说明">栏规钉死当前栏与 PM25 上下限。分指标门槛属于空桩。</p>
+      <div class="双栏"><p class="说明">栏规钉死当前栏与分指标门槛（账册版本 + 指纹）。已落地：分指标门槛与入栏同票、错阈仅进只读影子归档、旧指纹命运拒回刷。</p>
       <div class="侧注">版式：底栏铜青。潮切是左侧窗时间轴浅纸底。</div></div>
     </section>
     <script>
+    async function 刷门槛页() {
+      const 门 = await 探栏.getJSON("/api/分门槛裁决?指标键=PM25&读数=0");
+      探栏.渲染门槛表(document.getElementById("门槛表"), 门.门槛表);
+      const 账 = await 探栏.getJSON("/api/门槛账册");
+      const tb = document.getElementById("账册表"); tb.innerHTML = "";
+      if (!账.length) { tb.innerHTML = `<tr><td colspan="7">${探栏.空态("尚无账册。")}</td></tr>`; }
+      for (const r of 账) {
+        tb.appendChild(探栏.行(`<td>${r.序号}</td><td>${探栏.安全文本(r.指标键)}</td><td>${探栏.安全文本(r.下限)}</td><td>${探栏.安全文本(r.上限)}</td><td><code>${探栏.安全文本(r.指纹)}</code></td><td>${r.账册版本}</td><td>${探栏.安全文本(r.时刻)}</td>`));
+      }
+    }
+    document.getElementById("探裁决").onclick = async () => {
+      const el = document.getElementById("裁决回执");
+      try {
+        const 指标 = encodeURIComponent(document.getElementById("探指标").value || "");
+        const 读数 = encodeURIComponent(document.getElementById("探读数").value || "");
+        const d = await 探栏.getJSON(`/api/分门槛裁决?指标键=${指标}&读数=${读数}`);
+        const 裁 = d.裁决;
+        el.textContent = JSON.stringify({
+          指标键: d.指标键, 读数: d.读数, 裁决: 探栏.分流中文(裁.裁决 === "入栏" ? "本指标门槛" : "本指标越界"),
+          过门槛: 裁.过门槛, 下限: 裁.下限, 上限: 裁.上限, 原因: 裁.原因,
+          账册版本: d.账册版本, 门槛指纹: d.门槛指纹, 写库: d.写库,
+        }, null, 2);
+        await 刷门槛页();
+      } catch (e) { el.textContent = String(e); }
+    };
     (async () => {
+      await 刷门槛页();
       document.getElementById("规").textContent = JSON.stringify(await 探栏.getJSON("/api/栏规"), null, 2);
       const s = await 探栏.getJSON("/api/空桩");
       document.getElementById("空桩").textContent = "空桩 " + s.条数 + "：" + (s.空桩 || []).join(" · ");

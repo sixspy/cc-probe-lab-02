@@ -20,15 +20,26 @@
     </header>
 
     <section class="卷">
-      <div class="表绕"><table><thead><tr><th>报文编号</th><th>站点</th><th>指标</th><th>读数</th><th>栏号</th><th>命运</th></tr></thead><tbody id="表"></tbody></table></div>
+      <h2>现行入栏缓冲（只收本指标、当前门槛指纹过门槛集）</h2>
+      <div class="表绕"><table><thead><tr><th>报文编号</th><th>站点</th><th>指标</th><th>读数</th><th>栏号</th><th>命运</th><th>门槛指纹</th></tr></thead><tbody id="表"></tbody></table></div>
+    </section>
+    <section class="卷">
+      <h2>影子归档（只读·错指标阈值草稿，不计正式入栏）</h2>
+      <div class="表绕"><table><thead><tr><th>编号</th><th>报文编号</th><th>指标</th><th>读数</th><th>草稿命运</th><th>原因</th><th>只读</th></tr></thead><tbody id="影表"></tbody></table></div>
     </section>
     <script>
     (async () => {
       const rows = await 探栏.getJSON("/api/入栏缓冲");
       const tb = document.getElementById("表");
-      if (!rows.length) { tb.innerHTML = `<tr><td colspan="6">${探栏.空态("缓冲为空。")}</td></tr>`; return; }
-      for (const r of rows) {
-        tb.appendChild(探栏.行(`<td>${探栏.安全文本(r.报文编号)}</td><td>${探栏.安全文本(r.站点键)}</td><td>${探栏.安全文本(r.指标键)}</td><td>${r.读数}</td><td>${探栏.安全文本(r.栏号)}</td><td>${探栏.徽章(r.命运)}</td>`));
+      if (!rows.length) { tb.innerHTML = `<tr><td colspan="7">${探栏.空态("缓冲为空。")}</td></tr>`; }
+      else for (const r of rows) {
+        tb.appendChild(探栏.行(`<td>${探栏.安全文本(r.报文编号)}</td><td>${探栏.安全文本(r.站点键)}</td><td>${探栏.安全文本(r.指标键)}</td><td>${r.读数}</td><td>${探栏.安全文本(r.栏号)}</td><td>${探栏.徽章(r.命运)}</td><td><code>${探栏.安全文本(r.门槛指纹 || "—")}</code></td>`));
+      }
+      const 影 = await 探栏.getJSON("/api/影子归档");
+      const 影表 = document.getElementById("影表");
+      if (!影.length) { 影表.innerHTML = `<tr><td colspan="7">${探栏.空态("影子为空。错指标阈值点会在这里出现，且不增现行缓冲。")}</td></tr>`; }
+      else for (const r of 影) {
+        影表.appendChild(探栏.行(`<td>${r.编号}</td><td>${探栏.安全文本(r.报文编号)}</td><td>${探栏.安全文本(r.指标键)}</td><td>${r.读数}</td><td>${探栏.徽章(r.草稿命运,"warn")}</td><td>${探栏.安全文本(r.原因)}</td><td>${r.只读 ? "是" : "否"}</td>`));
       }
     })();
     </script>

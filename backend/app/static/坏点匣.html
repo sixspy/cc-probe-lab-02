@@ -20,15 +20,15 @@
     </header>
 
     <section class="卷">
-      <div class="表绕"><table><thead><tr><th>编号</th><th>报文编号</th><th>站点</th><th>原因</th><th>读数</th><th>观测时</th></tr></thead><tbody id="表"></tbody></table></div>
+      <div class="表绕"><table><thead><tr><th>编号</th><th>报文编号</th><th>站点</th><th>原因</th><th>读数</th><th>观测时</th><th>分流口径</th></tr></thead><tbody id="表"></tbody></table></div>
     </section>
     <script>
     (async () => {
       const rows = await 探栏.getJSON("/api/坏点匣");
       const tb = document.getElementById("表");
-      if (!rows.length) { tb.innerHTML = `<tr><td colspan="6">${探栏.空态("坏点匣为空。灌坏点样例可看到越界旁路。")}</td></tr>`; return; }
+      if (!rows.length) { tb.innerHTML = `<tr><td colspan="7">${探栏.空态("坏点匣为空。灌坏点样例可看到越界旁路。")}</td></tr>`; return; }
       for (const r of rows) {
-        tb.appendChild(探栏.行(`<td>${r.编号}</td><td>${探栏.安全文本(r.报文编号)}</td><td>${探栏.安全文本(r.站点键)}</td><td>${探栏.徽章(r.原因,"警")}</td><td>${r.读数}</td><td>${探栏.安全文本(r.观测时)}</td>`));
+        tb.appendChild(探栏.行(`<td>${r.编号}</td><td>${探栏.安全文本(r.报文编号)}</td><td>${探栏.安全文本(r.站点键)}</td><td>${探栏.徽章(r.原因,"警")}</td><td>${r.读数}</td><td>${探栏.安全文本(r.观测时)}</td><td>${探栏.徽章(探栏.分流中文(r.分流), r.分流 === "错指标门槛" ? "warn" : "")}</td>`));
       }
     })();
     </script>

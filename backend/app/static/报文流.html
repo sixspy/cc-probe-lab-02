@@ -21,9 +21,10 @@
 
     <section class="卷">
       <div class="横排 下距12" id="命运统计"></div>
-      <div class="表绕"><table><thead><tr><th>报文编号</th><th>站点</th><th>指标</th><th>读数</th><th>观测时</th><th>命运</th></tr></thead><tbody id="表"></tbody></table></div>
+      <div class="横排 下距12" id="影统计"></div>
+      <div class="表绕"><table><thead><tr><th>报文编号</th><th>站点</th><th>指标</th><th>读数</th><th>观测时</th><th>命运</th><th>分流口径</th></tr></thead><tbody id="表"></tbody></table></div>
     </section>
-    <section class="卷"><div class="双栏"><p class="说明">报文是装载入流。命运应可读：已装载→已入栏/已坏点→已汇总。</p><div class="侧注">子方向：采集入库质控。行业皮：环境监测传感站。</div></div></section>
+    <section class="卷"><div class="双栏"><p class="说明">报文是装载入流。命运应可读：已装载→已入栏/已坏点→已汇总。分流口径按本指标门槛裁决，错指标阈值下的点只进只读影子归档，不改正式入栏。</p><div class="侧注">子方向：采集入库质控。行业皮：环境监测传感站。</div></div></section>
     <script>
     (async () => {
       const fate = await 探栏.getJSON("/api/统计/报文命运");
@@ -31,11 +32,15 @@
       box.innerHTML = Object.entries(fate).map(([k,v]) =>
         `<div class="水卡"><div class="数">${v}</div><div class="标">${探栏.安全文本(k)}</div></div>`
       ).join("") || 探栏.空态("尚无命运统计");
+      const 影 = await 探栏.getJSON("/api/影子归档");
+      document.getElementById("影统计").innerHTML =
+        `<div class="水卡"><div class="数">${影.length}</div><div class="标">影子归档（只读·不计正式）</div></div>`;
       const rows = await 探栏.getJSON("/api/观测报文");
       const tb = document.getElementById("表");
-      if (!rows.length) { tb.innerHTML = `<tr><td colspan="6">${探栏.空态("尚无报文。回探栏台灌入栏成汇总样例。")}</td></tr>`; return; }
+      if (!rows.length) { tb.innerHTML = `<tr><td colspan="7">${探栏.空态("尚无报文。回探栏台灌入栏成汇总样例。")}</td></tr>`; return; }
       for (const r of rows) {
-        tb.appendChild(探栏.行(`<td>${探栏.安全文本(r.报文编号)}</td><td>${探栏.安全文本(r.站点键)}</td><td>${探栏.安全文本(r.指标键)}</td><td>${r.读数}</td><td>${探栏.安全文本(r.观测时)}</td><td>${探栏.徽章(r.命运)}</td>`));
+        const 分流 = 探栏.分流中文(r.分流);
+        tb.appendChild(探栏.行(`<td>${探栏.安全文本(r.报文编号)}</td><td>${探栏.安全文本(r.站点键)}</td><td>${探栏.安全文本(r.指标键)}</td><td>${r.读数}</td><td>${探栏.安全文本(r.观测时)}</td><td>${探栏.徽章(r.命运)}</td><td>${探栏.徽章(分流, r.分流 === "错指标门槛" ? "warn" : "")}</td>`));
       }
     })();
     </script>
